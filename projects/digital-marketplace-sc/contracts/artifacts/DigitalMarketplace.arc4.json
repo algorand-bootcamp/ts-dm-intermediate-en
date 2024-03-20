@@ -95,6 +95,34 @@
       }
     },
     {
+      "name": "buy",
+      "args": [
+        {
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "name": "asset",
+          "type": "uint64"
+        },
+        {
+          "name": "nonce",
+          "type": "uint64"
+        },
+        {
+          "name": "buyPay",
+          "type": "pay"
+        },
+        {
+          "name": "quantity",
+          "type": "uint64"
+        }
+      ],
+      "returns": {
+        "type": "void"
+      }
+    },
+    {
       "name": "createApplication",
       "args": [],
       "returns": {

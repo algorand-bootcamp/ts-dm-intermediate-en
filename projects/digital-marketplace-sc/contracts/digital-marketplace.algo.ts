@@ -93,4 +93,27 @@ export class DigitalMarketplace extends Contract {
       assetAmount: currentDeposited,
     });
   }
+
+  buy(owner: Address, asset: AssetID, nonce: uint64, buyPay: PayTxn, quantity: uint64) {
+    const currentDeposited = this.forSaleBoard({ owner: owner, asa: asset.id, nonce: nonce }).value.deposited;
+    const currentUnitaryPrice = this.forSaleBoard({ owner: owner, asa: asset.id, nonce: nonce }).value.unitaryPrice;
+
+    const amountToBePaid = wideRatio([currentUnitaryPrice, quantity], [10 ** asset.decimals]);
+
+    verifyPayTxn(buyPay, {
+      receiver: owner,
+      amount: amountToBePaid,
+    });
+
+    sendAssetTransfer({
+      xferAsset: asset,
+      assetReceiver: this.txn.sender,
+      assetAmount: quantity,
+    });
+
+    this.forSaleBoard({ owner: owner, asa: asset.id, nonce: nonce }).value = {
+      deposited: currentDeposited - quantity,
+      unitaryPrice: currentUnitaryPrice,
+    };
+  }
 }

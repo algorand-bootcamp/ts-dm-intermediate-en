@@ -534,6 +534,175 @@ withdraw:
 	itxn_submit
 	retsub
 
+// buy(address,uint64,uint64,pay,uint64)void
+*abi_route_buy:
+	// quantity: uint64
+	txna ApplicationArgs 4
+	btoi
+
+	// buyPay: pay
+	txn GroupIndex
+	int 1
+	-
+	dup
+	gtxns TypeEnum
+	int pay
+	==
+	assert
+
+	// nonce: uint64
+	txna ApplicationArgs 3
+	btoi
+
+	// asset: uint64
+	txna ApplicationArgs 2
+	btoi
+
+	// owner: address
+	txna ApplicationArgs 1
+	dup
+	len
+	int 32
+	==
+	assert
+
+	// execute buy(address,uint64,uint64,pay,uint64)void
+	callsub buy
+	int 1
+	return
+
+// buy(owner: Address, asset: AssetID, nonce: uint64, buyPay: PayTxn, quantity: uint64): void
+buy:
+	proto 5 0
+
+	// Push empty bytes after the frame pointer to reserve space for local variables
+	byte 0x
+	dupn 2
+
+	// contracts/digital-marketplace.algo.ts:98
+	// currentDeposited = this.forSaleBoard({ owner: owner, asa: asset.id, nonce: nonce }).value.deposited
+	int 0
+	int 8
+	frame_dig -1 // owner: Address
+	frame_dig -2 // asset: AssetID
+	itob
+	concat
+	frame_dig -3 // nonce: uint64
+	itob
+	concat
+	cover 2
+	box_extract
+	btoi
+	frame_bury 0 // currentDeposited: uint64
+
+	// contracts/digital-marketplace.algo.ts:99
+	// currentUnitaryPrice = this.forSaleBoard({ owner: owner, asa: asset.id, nonce: nonce }).value.unitaryPrice
+	int 8 // headOffset
+	int 8
+	frame_dig -1 // owner: Address
+	frame_dig -2 // asset: AssetID
+	itob
+	concat
+	frame_dig -3 // nonce: uint64
+	itob
+	concat
+	cover 2
+	box_extract
+	btoi
+	frame_bury 1 // currentUnitaryPrice: uint64
+
+	// contracts/digital-marketplace.algo.ts:101
+	// amountToBePaid = wideRatio([currentUnitaryPrice, quantity], [10 ** asset.decimals])
+	frame_dig 1 // currentUnitaryPrice: uint64
+	frame_dig -5 // quantity: uint64
+	mulw
+	int 0
+	int 10
+	frame_dig -2 // asset: AssetID
+	asset_params_get AssetDecimals
+	pop
+	exp
+	divmodw
+	pop
+	pop
+	swap
+	!
+	assert
+	frame_bury 2 // amountToBePaid: uint64
+
+	// contracts/digital-marketplace.algo.ts:103
+	// verifyPayTxn(buyPay, {
+	//       receiver: owner,
+	//       amount: amountToBePaid,
+	//     })
+	// verify receiver
+	frame_dig -4 // buyPay: PayTxn
+	gtxns Receiver
+	frame_dig -1 // owner: Address
+	==
+	assert
+
+	// verify amount
+	frame_dig -4 // buyPay: PayTxn
+	gtxns Amount
+	frame_dig 2 // amountToBePaid: uint64
+	==
+	assert
+
+	// contracts/digital-marketplace.algo.ts:108
+	// sendAssetTransfer({
+	//       xferAsset: asset,
+	//       assetReceiver: this.txn.sender,
+	//       assetAmount: quantity,
+	//     })
+	itxn_begin
+	int axfer
+	itxn_field TypeEnum
+
+	// contracts/digital-marketplace.algo.ts:109
+	// xferAsset: asset
+	frame_dig -2 // asset: AssetID
+	itxn_field XferAsset
+
+	// contracts/digital-marketplace.algo.ts:110
+	// assetReceiver: this.txn.sender
+	txn Sender
+	itxn_field AssetReceiver
+
+	// contracts/digital-marketplace.algo.ts:111
+	// assetAmount: quantity
+	frame_dig -5 // quantity: uint64
+	itxn_field AssetAmount
+
+	// Fee field not set, defaulting to 0
+	int 0
+	itxn_field Fee
+
+	// Submit inner transaction
+	itxn_submit
+
+	// contracts/digital-marketplace.algo.ts:114
+	// this.forSaleBoard({ owner: owner, asa: asset.id, nonce: nonce }).value = {
+	//       deposited: currentDeposited - quantity,
+	//       unitaryPrice: currentUnitaryPrice,
+	//     }
+	frame_dig -1 // owner: Address
+	frame_dig -2 // asset: AssetID
+	itob
+	concat
+	frame_dig -3 // nonce: uint64
+	itob
+	concat
+	frame_dig 0 // currentDeposited: uint64
+	frame_dig -5 // quantity: uint64
+	-
+	itob
+	frame_dig 1 // currentUnitaryPrice: uint64
+	itob
+	concat
+	box_put
+	retsub
+
 *abi_route_createApplication:
 	int 1
 	return
@@ -550,6 +719,7 @@ withdraw:
 	method "deposit(axfer,uint64)void"
 	method "setPrice(uint64,uint64,uint64)void"
 	method "withdraw(uint64,uint64)void"
+	method "buy(address,uint64,uint64,pay,uint64)void"
 	txna ApplicationArgs 0
-	match *abi_route_allowAsset *abi_route_firstDeposit *abi_route_deposit *abi_route_setPrice *abi_route_withdraw
+	match *abi_route_allowAsset *abi_route_firstDeposit *abi_route_deposit *abi_route_setPrice *abi_route_withdraw *abi_route_buy
 	err

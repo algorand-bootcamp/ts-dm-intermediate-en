@@ -13,6 +13,7 @@ import {
   getOrCreateKmdWalletAccount,
   sendTransaction,
   getAccountAddressAsUint8Array,
+  ensureFunded,
 } from '@algorandfoundation/algokit-utils';
 import { DigitalMarketplaceClient } from '../contracts/clients/DigitalMarketplaceClient';
 
@@ -53,8 +54,8 @@ describe('DigitalMarketplace', () => {
           {
             transaction: makeAssetCreateTxnWithSuggestedParamsFromObject({
               from: stableSeller.addr,
-              total: 10,
-              decimals: 0,
+              total: 10_000,
+              decimals: 3,
               defaultFrozen: false,
               note,
               suggestedParams: await algod.getTransactionParams().do(),
@@ -82,9 +83,9 @@ describe('DigitalMarketplace', () => {
       })
     );
 
-    await Promise.all(
+    const results = await Promise.all(
       testAssetsId.map(async (asset) => {
-        const result = await appClient.allowAsset(
+        return appClient.allowAsset(
           {
             mbrPay: makePaymentTxnWithSuggestedParamsFromObject({
               from: stableSeller.addr,
@@ -96,10 +97,10 @@ describe('DigitalMarketplace', () => {
           },
           { sendParams: { fee: algos(0.002) } }
         );
-
-        expect(result.confirmation).toBeDefined();
       })
     );
+
+    results.map((result) => expect(result.confirmation).toBeDefined());
 
     await Promise.all(
       testAssetsId.map(async (asset) => {
@@ -137,7 +138,7 @@ describe('DigitalMarketplace', () => {
             assetIndex: Number(asset),
             from: stableSeller.addr,
             to: appAddress,
-            amount: 3,
+            amount: 3_000,
             suggestedParams: await algod.getTransactionParams().do(),
           }),
           nonce,
@@ -153,7 +154,7 @@ describe('DigitalMarketplace', () => {
         await expect(algod.accountAssetInformation(appAddress, Number(asset)).do()).resolves.toEqual(
           expect.objectContaining({
             'asset-holding': {
-              amount: 3,
+              amount: 3_000,
               'asset-id': Number(asset),
               'is-frozen': false,
             },
@@ -172,7 +173,7 @@ describe('DigitalMarketplace', () => {
         );
         const boxDeposited = decodeUint64(boxContent.slice(0, 8), 'safe');
         const boxUnitaryPrice = decodeUint64(boxContent.slice(8, 16), 'safe');
-        expect(boxDeposited).toEqual(3);
+        expect(boxDeposited).toEqual(3_000);
         expect(boxUnitaryPrice).toEqual(algos(1).microAlgos);
       })
     );
@@ -190,7 +191,7 @@ describe('DigitalMarketplace', () => {
             assetIndex: Number(asset),
             from: stableSeller.addr,
             to: appAddress,
-            amount: 1,
+            amount: 1_000,
             suggestedParams: await algod.getTransactionParams().do(),
           }),
           nonce,
@@ -205,7 +206,7 @@ describe('DigitalMarketplace', () => {
         await expect(algod.accountAssetInformation(appAddress, Number(asset)).do()).resolves.toEqual(
           expect.objectContaining({
             'asset-holding': {
-              amount: 4,
+              amount: 4_000,
               'asset-id': Number(asset),
               'is-frozen': false,
             },
@@ -223,7 +224,7 @@ describe('DigitalMarketplace', () => {
           ])
         );
         const boxDeposited = decodeUint64(boxContent.slice(0, 8), 'safe');
-        expect(boxDeposited).toEqual(4);
+        expect(boxDeposited).toEqual(4_000);
       })
     );
   });
@@ -234,8 +235,8 @@ describe('DigitalMarketplace', () => {
 
     const results = await Promise.all(
       [
-        [testAssetsId[0], algos(3).microAlgos],
-        [testAssetsId[1], algos(5).microAlgos],
+        [testAssetsId[0], algos(3.2).microAlgos],
+        [testAssetsId[1], algos(5.7).microAlgos],
       ].map(async ([asset, unitaryPrice], nonce) => {
         return appClient.setPrice({
           asset,
@@ -248,8 +249,8 @@ describe('DigitalMarketplace', () => {
     results.map((result) => expect(result.confirmation).toBeDefined());
     await Promise.all(
       [
-        [testAssetsId[0], algos(3).microAlgos],
-        [testAssetsId[1], algos(5).microAlgos],
+        [testAssetsId[0], algos(3.2).microAlgos],
+        [testAssetsId[1], algos(5.7).microAlgos],
       ].map(async ([asset, unitaryPrice], nonce) => {
         const boxContent = await appClient.appClient.getBoxValue(
           new Uint8Array([
@@ -264,79 +265,100 @@ describe('DigitalMarketplace', () => {
     );
   });
 
-  // test('buy', async () => {
-  //   const { testAccount, algod } = fixture.context;
-  //   const { appAddress } = await appClient.appClient.getAppReference();
-  //
-  //   await sendTransaction(
-  //     {
-  //       transaction: makeAssetTransferTxnWithSuggestedParamsFromObject({
-  //         assetIndex: Number(testAssetId),
-  //         from: testAccount.addr,
-  //         to: testAccount.addr,
-  //         amount: 0,
-  //         suggestedParams: await algod.getTransactionParams().do(),
-  //       }),
-  //       from: testAccount,
-  //     },
-  //     algod
-  //   );
-  //
-  //   const result = await appClient.buy(
-  //     {
-  //       buyerTxn: makePaymentTxnWithSuggestedParamsFromObject({
-  //         from: testAccount.addr,
-  //         to: appAddress,
-  //         amount: algos(6.6).microAlgos,
-  //         suggestedParams: await algod.getTransactionParams().do(),
-  //       }),
-  //       quantity: 2,
-  //     },
-  //     {
-  //       sender: testAccount,
-  //       sendParams: {
-  //         fee: algos(0.002),
-  //       },
-  //     }
-  //   );
-  //
-  //   expect(result.confirmation).toBeDefined();
-  //
-  //   await expect(algod.accountAssetInformation(testAccount.addr, Number(testAssetId)).do()).resolves.toEqual(
-  //     expect.objectContaining({
-  //       'asset-holding': {
-  //         amount: 2,
-  //         'asset-id': Number(testAssetId),
-  //         'is-frozen': false,
-  //       },
-  //     })
-  //   );
-  // });
-  //
-  // test('withdraw', async () => {
-  //   const { algod, kmd } = fixture.context;
-  //   const testAccount = await getOrCreateKmdWalletAccount({ name: 'stableSellerAccount' }, algod, kmd);
-  //   const { appId } = await appClient.appClient.getAppReference();
-  //
-  //   const { amount: beforeCallAmount } = await algod.accountInformation(testAccount.addr).do();
-  //
-  //   const result = await appClient.delete.withdraw({}, { sendParams: { fee: algos(0.003) } });
-  //
-  //   expect(result.confirmation).toBeDefined();
-  //
-  //   const { amount: afterCallAmount } = await algod.accountInformation(testAccount.addr).do();
-  //   // After deleting the sell contract, the account gets ALGO for what they sold, contract mbr minus txn fees.
-  //   expect(afterCallAmount - beforeCallAmount).toEqual(algos(6.6 + 0.2 - 0.003).microAlgos);
-  //   await expect(algod.accountAssetInformation(testAccount.addr, Number(testAssetId)).do()).resolves.toEqual(
-  //     expect.objectContaining({
-  //       'asset-holding': {
-  //         amount: 8,
-  //         'asset-id': Number(testAssetId),
-  //         'is-frozen': false,
-  //       },
-  //     })
-  //   );
-  //
-  //   await expect(algod.getApplicationByID(Number(appId)).do()).rejects.toBeDefined();
-  // });
+  test('buy', async () => {
+    const { testAccount: buyer, algod, kmd } = fixture.context;
+    const stableSeller = await getOrCreateKmdWalletAccount({ name: 'stableSellerAccount' }, algod, kmd);
+
+    await ensureFunded({ accountToFund: buyer, minSpendingBalance: algos(100) }, algod, kmd);
+
+    await Promise.all(
+      testAssetsId.map(async (asset, note) => {
+        await sendTransaction(
+          {
+            transaction: makeAssetTransferTxnWithSuggestedParamsFromObject({
+              assetIndex: Number(asset),
+              from: buyer.addr,
+              to: buyer.addr,
+              amount: 0,
+              suggestedParams: await algod.getTransactionParams().do(),
+              note: new Uint8Array([note]),
+            }),
+            from: buyer,
+          },
+          algod
+        );
+      })
+    );
+
+    const results = await Promise.all(
+      [
+        [testAssetsId[0], algos(6.7936).microAlgos],
+        [testAssetsId[1], algos(12.1011).microAlgos],
+      ].map(async ([asset, amount], nonce) => {
+        return appClient.buy(
+          {
+            owner: stableSeller.addr,
+            asset,
+            nonce,
+            buyPay: makePaymentTxnWithSuggestedParamsFromObject({
+              from: buyer.addr,
+              to: stableSeller.addr,
+              amount,
+              suggestedParams: await algod.getTransactionParams().do(),
+            }),
+            quantity: 2_123,
+          },
+          { sender: buyer, sendParams: { fee: algos(0.002) } }
+        );
+      })
+    );
+
+    results.map((result) => expect(result.confirmation).toBeDefined());
+
+    await Promise.all(
+      testAssetsId.map(async (asset) => {
+        await expect(algod.accountAssetInformation(buyer.addr, Number(asset)).do()).resolves.toEqual(
+          expect.objectContaining({
+            'asset-holding': {
+              amount: 2_123,
+              'asset-id': Number(asset),
+              'is-frozen': false,
+            },
+          })
+        );
+      })
+    );
+  });
+
+  test('withdraw', async () => {
+    const { algod, kmd } = fixture.context;
+    const stableSeller = await getOrCreateKmdWalletAccount({ name: 'stableSellerAccount' }, algod, kmd);
+
+    const { amount: beforeCallAmount } = await algod.accountInformation(stableSeller.addr).do();
+
+    const results = await Promise.all(
+      testAssetsId.map(async (asset, nonce) => {
+        return appClient.withdraw({ asset, nonce }, { sendParams: { fee: algos(0.003) } });
+      })
+    );
+
+    results.map((result) => expect(result.confirmation).toBeDefined());
+
+    const { amount: afterCallAmount } = await algod.accountInformation(stableSeller.addr).do();
+
+    expect(afterCallAmount - beforeCallAmount).toEqual(algos(2 * (0.0281 - 0.003)).microAlgos);
+    await Promise.all(
+      testAssetsId.map(async (asset) => {
+        await expect(algod.accountAssetInformation(stableSeller.addr, Number(asset)).do()).resolves.toEqual(
+          expect.objectContaining({
+            'asset-holding': {
+              amount: 7_877,
+              'asset-id': Number(asset),
+              'is-frozen': false,
+            },
+          })
+        );
+      })
+    );
+  });
 });
