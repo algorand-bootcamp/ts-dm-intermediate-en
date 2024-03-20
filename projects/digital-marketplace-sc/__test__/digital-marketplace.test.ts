@@ -20,6 +20,7 @@ const fixture = algorandFixture();
 algokit.Config.configure({
   populateAppCallResources: true,
   debug: true,
+  traceAll: true,
 });
 
 let appClient: DigitalMarketplaceClient;
