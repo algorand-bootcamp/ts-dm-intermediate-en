@@ -56,6 +56,7 @@ export class DigitalMarketplace extends Contract {
       // FIXME: This should work but for some reason the call fails in testing.
       // assetSender: this.txn.sender,
       assetReceiver: this.app.address,
+      assetAmount: { greaterThan: 0 },
     });
 
     const currentDeposited = this.forSaleBoard({ owner: this.txn.sender, asa: xfer.xferAsset.id, nonce: nonce }).value
@@ -69,8 +70,6 @@ export class DigitalMarketplace extends Contract {
   }
 
   setPrice(asset: uint64, nonce: uint64, unitaryPrice: uint64) {
-    assert(this.forSaleBoard({ owner: this.txn.sender, asa: asset, nonce: nonce }).exists);
-
     const currentDeposited = this.forSaleBoard({ owner: this.txn.sender, asa: asset, nonce: nonce }).value.deposited;
     this.forSaleBoard({ owner: this.txn.sender, asa: asset, nonce: nonce }).value = {
       deposited: currentDeposited,
@@ -101,6 +100,7 @@ export class DigitalMarketplace extends Contract {
     const amountToBePaid = wideRatio([currentUnitaryPrice, quantity], [10 ** asset.decimals]);
 
     verifyPayTxn(buyPay, {
+      sender: this.txn.sender,
       receiver: owner,
       amount: amountToBePaid,
     });
