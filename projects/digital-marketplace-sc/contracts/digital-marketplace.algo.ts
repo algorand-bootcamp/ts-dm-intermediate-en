@@ -37,8 +37,7 @@ export class DigitalMarketplace extends Contract {
     });
 
     verifyAssetTransferTxn(xfer, {
-      // FIXME: This should work but for some reason the call fails in testing.
-      // assetSender: this.txn.sender,
+      sender: this.txn.sender,
       assetReceiver: this.app.address,
       assetAmount: { greaterThan: 0 },
     });
@@ -53,8 +52,7 @@ export class DigitalMarketplace extends Contract {
     assert(this.forSaleBoard({ owner: this.txn.sender, asa: xfer.xferAsset.id, nonce: nonce }).exists);
 
     verifyAssetTransferTxn(xfer, {
-      // FIXME: This should work but for some reason the call fails in testing.
-      // assetSender: this.txn.sender,
+      sender: this.txn.sender,
       assetReceiver: this.app.address,
       assetAmount: { greaterThan: 0 },
     });
