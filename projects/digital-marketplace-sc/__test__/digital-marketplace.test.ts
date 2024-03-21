@@ -123,10 +123,7 @@ describe('DigitalMarketplace', () => {
     const { appAddress } = await appClient.appClient.getAppReference();
 
     const results = await Promise.all(
-      [
-        [testAssetsId[0], algos(1).microAlgos],
-        [testAssetsId[1], algos(1).microAlgos],
-      ].map(async ([asset, unitaryPrice], nonce) => {
+      testAssetsId.map(async (asset) => {
         return appClient.firstDeposit({
           mbrPay: makePaymentTxnWithSuggestedParamsFromObject({
             from: stableSeller.addr,
@@ -141,8 +138,8 @@ describe('DigitalMarketplace', () => {
             amount: 3_000,
             suggestedParams: await algod.getTransactionParams().do(),
           }),
-          nonce,
-          unitaryPrice,
+          nonce: 0,
+          unitaryPrice: algos(1).microAlgos,
         });
       })
     );
@@ -163,13 +160,9 @@ describe('DigitalMarketplace', () => {
       })
     );
     await Promise.all(
-      testAssetsId.map(async (asset, nonce) => {
+      testAssetsId.map(async (asset) => {
         const boxContent = await appClient.appClient.getBoxValue(
-          new Uint8Array([
-            ...getAccountAddressAsUint8Array(stableSeller),
-            ...encodeUint64(asset),
-            ...encodeUint64(nonce),
-          ])
+          new Uint8Array([...getAccountAddressAsUint8Array(stableSeller), ...encodeUint64(asset), ...encodeUint64(0)])
         );
         const boxDeposited = decodeUint64(boxContent.slice(0, 8), 'safe');
         const boxUnitaryPrice = decodeUint64(boxContent.slice(8, 16), 'safe');
@@ -185,7 +178,7 @@ describe('DigitalMarketplace', () => {
     const { appAddress } = await appClient.appClient.getAppReference();
 
     const results = await Promise.all(
-      testAssetsId.map(async (asset, nonce) => {
+      testAssetsId.map(async (asset) => {
         return appClient.deposit({
           xfer: makeAssetTransferTxnWithSuggestedParamsFromObject({
             assetIndex: Number(asset),
@@ -194,7 +187,7 @@ describe('DigitalMarketplace', () => {
             amount: 1_000,
             suggestedParams: await algod.getTransactionParams().do(),
           }),
-          nonce,
+          nonce: 0,
         });
       })
     );
@@ -215,13 +208,9 @@ describe('DigitalMarketplace', () => {
       })
     );
     await Promise.all(
-      testAssetsId.map(async (asset, nonce) => {
+      testAssetsId.map(async (asset) => {
         const boxContent = await appClient.appClient.getBoxValue(
-          new Uint8Array([
-            ...getAccountAddressAsUint8Array(stableSeller),
-            ...encodeUint64(asset),
-            ...encodeUint64(nonce),
-          ])
+          new Uint8Array([...getAccountAddressAsUint8Array(stableSeller), ...encodeUint64(asset), ...encodeUint64(0)])
         );
         const boxDeposited = decodeUint64(boxContent.slice(0, 8), 'safe');
         expect(boxDeposited).toEqual(4_000);
@@ -237,10 +226,10 @@ describe('DigitalMarketplace', () => {
       [
         [testAssetsId[0], algos(3.2).microAlgos],
         [testAssetsId[1], algos(5.7).microAlgos],
-      ].map(async ([asset, unitaryPrice], nonce) => {
+      ].map(async ([asset, unitaryPrice]) => {
         return appClient.setPrice({
           asset,
-          nonce,
+          nonce: 0,
           unitaryPrice,
         });
       })
@@ -251,13 +240,9 @@ describe('DigitalMarketplace', () => {
       [
         [testAssetsId[0], algos(3.2).microAlgos],
         [testAssetsId[1], algos(5.7).microAlgos],
-      ].map(async ([asset, unitaryPrice], nonce) => {
+      ].map(async ([asset, unitaryPrice]) => {
         const boxContent = await appClient.appClient.getBoxValue(
-          new Uint8Array([
-            ...getAccountAddressAsUint8Array(stableSeller),
-            ...encodeUint64(asset),
-            ...encodeUint64(nonce),
-          ])
+          new Uint8Array([...getAccountAddressAsUint8Array(stableSeller), ...encodeUint64(asset), ...encodeUint64(0)])
         );
         const boxUnitaryPrice = decodeUint64(boxContent.slice(8, 16), 'safe');
         expect(boxUnitaryPrice).toEqual(unitaryPrice);
@@ -294,12 +279,12 @@ describe('DigitalMarketplace', () => {
       [
         [testAssetsId[0], algos(6.7936).microAlgos],
         [testAssetsId[1], algos(12.1011).microAlgos],
-      ].map(async ([asset, amount], nonce) => {
+      ].map(async ([asset, amount]) => {
         return appClient.buy(
           {
             owner: stableSeller.addr,
             asset,
-            nonce,
+            nonce: 0,
             buyPay: makePaymentTxnWithSuggestedParamsFromObject({
               from: buyer.addr,
               to: stableSeller.addr,
@@ -337,8 +322,8 @@ describe('DigitalMarketplace', () => {
     const { amount: beforeCallAmount } = await algod.accountInformation(stableSeller.addr).do();
 
     const results = await Promise.all(
-      testAssetsId.map(async (asset, nonce) => {
-        return appClient.withdraw({ asset, nonce }, { sendParams: { fee: algos(0.003) } });
+      testAssetsId.map(async (asset) => {
+        return appClient.withdraw({ asset, nonce: 0 }, { sendParams: { fee: algos(0.003) } });
       })
     );
 
