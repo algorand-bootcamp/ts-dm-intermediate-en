@@ -46,7 +46,7 @@ switch *call_NoOp *NOT_IMPLEMENTED *NOT_IMPLEMENTED *NOT_IMPLEMENTED *NOT_IMPLEM
 allowAsset:
 	proto 2 0
 
-	// contracts/digital-marketplace.algo.ts:16
+	// contracts\digital-marketplace.algo.ts:16
 	// assert(!this.app.address.isOptedInToAsset(asset))
 	global CurrentApplicationAddress
 	frame_dig -2 // asset: AssetID
@@ -56,7 +56,7 @@ allowAsset:
 	!
 	assert
 
-	// contracts/digital-marketplace.algo.ts:18
+	// contracts\digital-marketplace.algo.ts:18
 	// verifyPayTxn(mbrPay, {
 	//       receiver: this.app.address,
 	//       amount: globals.assetOptInMinBalance,
@@ -75,7 +75,7 @@ allowAsset:
 	==
 	assert
 
-	// contracts/digital-marketplace.algo.ts:23
+	// contracts\digital-marketplace.algo.ts:23
 	// sendAssetTransfer({
 	//       xferAsset: asset,
 	//       assetAmount: 0,
@@ -85,17 +85,17 @@ allowAsset:
 	int axfer
 	itxn_field TypeEnum
 
-	// contracts/digital-marketplace.algo.ts:24
+	// contracts\digital-marketplace.algo.ts:24
 	// xferAsset: asset
 	frame_dig -2 // asset: AssetID
 	itxn_field XferAsset
 
-	// contracts/digital-marketplace.algo.ts:25
+	// contracts\digital-marketplace.algo.ts:25
 	// assetAmount: 0
 	int 0
 	itxn_field AssetAmount
 
-	// contracts/digital-marketplace.algo.ts:26
+	// contracts\digital-marketplace.algo.ts:26
 	// assetReceiver: this.app.address
 	global CurrentApplicationAddress
 	itxn_field AssetReceiver
@@ -147,7 +147,7 @@ allowAsset:
 firstDeposit:
 	proto 4 0
 
-	// contracts/digital-marketplace.algo.ts:31
+	// contracts\digital-marketplace.algo.ts:31
 	// assert(!this.forSaleBoard({ owner: this.txn.sender, asa: xfer.xferAsset.id, nonce: nonce }).exists)
 	txn Sender
 	frame_dig -2 // xfer: AssetTransferTxn
@@ -163,7 +163,7 @@ firstDeposit:
 	!
 	assert
 
-	// contracts/digital-marketplace.algo.ts:33
+	// contracts\digital-marketplace.algo.ts:33
 	// verifyPayTxn(mbrPay, {
 	//       sender: this.txn.sender,
 	//       receiver: this.app.address,
@@ -190,7 +190,7 @@ firstDeposit:
 	==
 	assert
 
-	// contracts/digital-marketplace.algo.ts:39
+	// contracts\digital-marketplace.algo.ts:39
 	// verifyAssetTransferTxn(xfer, {
 	//       sender: this.txn.sender,
 	//       assetReceiver: this.app.address,
@@ -217,7 +217,7 @@ firstDeposit:
 	>
 	assert
 
-	// contracts/digital-marketplace.algo.ts:45
+	// contracts\digital-marketplace.algo.ts:45
 	// this.forSaleBoard({ owner: this.txn.sender, asa: xfer.xferAsset.id, nonce: nonce }).value = {
 	//       deposited: xfer.assetAmount,
 	//       unitaryPrice: unitaryPrice,
@@ -268,7 +268,7 @@ deposit:
 	byte 0x
 	dup
 
-	// contracts/digital-marketplace.algo.ts:52
+	// contracts\digital-marketplace.algo.ts:52
 	// assert(this.forSaleBoard({ owner: this.txn.sender, asa: xfer.xferAsset.id, nonce: nonce }).exists)
 	txn Sender
 	frame_dig -1 // xfer: AssetTransferTxn
@@ -283,7 +283,7 @@ deposit:
 	pop
 	assert
 
-	// contracts/digital-marketplace.algo.ts:54
+	// contracts\digital-marketplace.algo.ts:54
 	// verifyAssetTransferTxn(xfer, {
 	//       sender: this.txn.sender,
 	//       assetReceiver: this.app.address,
@@ -310,7 +310,7 @@ deposit:
 	>
 	assert
 
-	// contracts/digital-marketplace.algo.ts:60
+	// contracts\digital-marketplace.algo.ts:60
 	// currentDeposited = this.forSaleBoard({ owner: this.txn.sender, asa: xfer.xferAsset.id, nonce: nonce }).value
 	//       .deposited
 	int 0
@@ -328,7 +328,7 @@ deposit:
 	btoi
 	frame_bury 0 // currentDeposited: uint64
 
-	// contracts/digital-marketplace.algo.ts:62
+	// contracts\digital-marketplace.algo.ts:62
 	// currentUnitaryPrice = this.forSaleBoard({ owner: this.txn.sender, asa: xfer.xferAsset.id, nonce: nonce })
 	//       .value.unitaryPrice
 	int 8 // headOffset
@@ -346,7 +346,7 @@ deposit:
 	btoi
 	frame_bury 1 // currentUnitaryPrice: uint64
 
-	// contracts/digital-marketplace.algo.ts:64
+	// contracts\digital-marketplace.algo.ts:64
 	// this.forSaleBoard({ owner: this.txn.sender, asa: xfer.xferAsset.id, nonce: nonce }).value = {
 	//       deposited: currentDeposited + xfer.assetAmount,
 	//       unitaryPrice: currentUnitaryPrice,
@@ -396,7 +396,7 @@ setPrice:
 	// Push empty bytes after the frame pointer to reserve space for local variables
 	byte 0x
 
-	// contracts/digital-marketplace.algo.ts:71
+	// contracts\digital-marketplace.algo.ts:71
 	// currentDeposited = this.forSaleBoard({ owner: this.txn.sender, asa: asset, nonce: nonce }).value.deposited
 	int 0
 	int 8
@@ -412,7 +412,7 @@ setPrice:
 	btoi
 	frame_bury 0 // currentDeposited: uint64
 
-	// contracts/digital-marketplace.algo.ts:72
+	// contracts\digital-marketplace.algo.ts:72
 	// this.forSaleBoard({ owner: this.txn.sender, asa: asset, nonce: nonce }).value = {
 	//       deposited: currentDeposited,
 	//       unitaryPrice: unitaryPrice,
@@ -454,7 +454,7 @@ withdraw:
 	// Push empty bytes after the frame pointer to reserve space for local variables
 	byte 0x
 
-	// contracts/digital-marketplace.algo.ts:79
+	// contracts\digital-marketplace.algo.ts:79
 	// currentDeposited = this.forSaleBoard({ owner: this.txn.sender, asa: asset.id, nonce: nonce }).value.deposited
 	int 0
 	int 8
@@ -470,7 +470,7 @@ withdraw:
 	btoi
 	frame_bury 0 // currentDeposited: uint64
 
-	// contracts/digital-marketplace.algo.ts:80
+	// contracts\digital-marketplace.algo.ts:80
 	// this.forSaleBoard({ owner: this.txn.sender, asa: asset.id, nonce: nonce }).delete()
 	txn Sender
 	frame_dig -1 // asset: AssetID
@@ -481,7 +481,7 @@ withdraw:
 	concat
 	box_del
 
-	// contracts/digital-marketplace.algo.ts:82
+	// contracts\digital-marketplace.algo.ts:82
 	// sendPayment({
 	//       receiver: this.txn.sender,
 	//       amount: forSaleMbr,
@@ -490,12 +490,12 @@ withdraw:
 	int pay
 	itxn_field TypeEnum
 
-	// contracts/digital-marketplace.algo.ts:83
+	// contracts\digital-marketplace.algo.ts:83
 	// receiver: this.txn.sender
 	txn Sender
 	itxn_field Receiver
 
-	// contracts/digital-marketplace.algo.ts:84
+	// contracts\digital-marketplace.algo.ts:84
 	// amount: forSaleMbr
 	int 28100
 	itxn_field Amount
@@ -507,7 +507,7 @@ withdraw:
 	// Submit inner transaction
 	itxn_submit
 
-	// contracts/digital-marketplace.algo.ts:87
+	// contracts\digital-marketplace.algo.ts:87
 	// sendAssetTransfer({
 	//       xferAsset: asset,
 	//       assetReceiver: this.txn.sender,
@@ -517,17 +517,17 @@ withdraw:
 	int axfer
 	itxn_field TypeEnum
 
-	// contracts/digital-marketplace.algo.ts:88
+	// contracts\digital-marketplace.algo.ts:88
 	// xferAsset: asset
 	frame_dig -1 // asset: AssetID
 	itxn_field XferAsset
 
-	// contracts/digital-marketplace.algo.ts:89
+	// contracts\digital-marketplace.algo.ts:89
 	// assetReceiver: this.txn.sender
 	txn Sender
 	itxn_field AssetReceiver
 
-	// contracts/digital-marketplace.algo.ts:90
+	// contracts\digital-marketplace.algo.ts:90
 	// assetAmount: currentDeposited
 	frame_dig 0 // currentDeposited: uint64
 	itxn_field AssetAmount
@@ -585,7 +585,7 @@ buy:
 	byte 0x
 	dupn 2
 
-	// contracts/digital-marketplace.algo.ts:95
+	// contracts\digital-marketplace.algo.ts:95
 	// currentDeposited = this.forSaleBoard({ owner: owner, asa: asset.id, nonce: nonce }).value.deposited
 	int 0
 	int 8
@@ -601,7 +601,7 @@ buy:
 	btoi
 	frame_bury 0 // currentDeposited: uint64
 
-	// contracts/digital-marketplace.algo.ts:96
+	// contracts\digital-marketplace.algo.ts:96
 	// currentUnitaryPrice = this.forSaleBoard({ owner: owner, asa: asset.id, nonce: nonce }).value.unitaryPrice
 	int 8 // headOffset
 	int 8
@@ -617,7 +617,7 @@ buy:
 	btoi
 	frame_bury 1 // currentUnitaryPrice: uint64
 
-	// contracts/digital-marketplace.algo.ts:98
+	// contracts\digital-marketplace.algo.ts:98
 	// amountToBePaid = wideRatio([currentUnitaryPrice, quantity], [10 ** asset.decimals])
 	frame_dig 1 // currentUnitaryPrice: uint64
 	frame_dig -5 // quantity: uint64
@@ -636,7 +636,7 @@ buy:
 	assert
 	frame_bury 2 // amountToBePaid: uint64
 
-	// contracts/digital-marketplace.algo.ts:100
+	// contracts\digital-marketplace.algo.ts:100
 	// verifyPayTxn(buyPay, {
 	//       sender: this.txn.sender,
 	//       receiver: owner,
@@ -663,7 +663,7 @@ buy:
 	==
 	assert
 
-	// contracts/digital-marketplace.algo.ts:106
+	// contracts\digital-marketplace.algo.ts:106
 	// sendAssetTransfer({
 	//       xferAsset: asset,
 	//       assetReceiver: this.txn.sender,
@@ -673,17 +673,17 @@ buy:
 	int axfer
 	itxn_field TypeEnum
 
-	// contracts/digital-marketplace.algo.ts:107
+	// contracts\digital-marketplace.algo.ts:107
 	// xferAsset: asset
 	frame_dig -2 // asset: AssetID
 	itxn_field XferAsset
 
-	// contracts/digital-marketplace.algo.ts:108
+	// contracts\digital-marketplace.algo.ts:108
 	// assetReceiver: this.txn.sender
 	txn Sender
 	itxn_field AssetReceiver
 
-	// contracts/digital-marketplace.algo.ts:109
+	// contracts\digital-marketplace.algo.ts:109
 	// assetAmount: quantity
 	frame_dig -5 // quantity: uint64
 	itxn_field AssetAmount
@@ -695,7 +695,7 @@ buy:
 	// Submit inner transaction
 	itxn_submit
 
-	// contracts/digital-marketplace.algo.ts:112
+	// contracts\digital-marketplace.algo.ts:112
 	// this.forSaleBoard({ owner: owner, asa: asset.id, nonce: nonce }).value = {
 	//       deposited: currentDeposited - quantity,
 	//       unitaryPrice: currentUnitaryPrice,
