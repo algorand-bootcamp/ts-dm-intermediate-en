@@ -79,22 +79,6 @@
       }
     },
     {
-      "name": "withdraw",
-      "args": [
-        {
-          "name": "asset",
-          "type": "uint64"
-        },
-        {
-          "name": "nonce",
-          "type": "uint64"
-        }
-      ],
-      "returns": {
-        "type": "void"
-      }
-    },
-    {
       "name": "buy",
       "args": [
         {
@@ -115,6 +99,70 @@
         },
         {
           "name": "quantity",
+          "type": "uint64"
+        }
+      ],
+      "returns": {
+        "type": "void"
+      }
+    },
+    {
+      "name": "bid",
+      "args": [
+        {
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "name": "asset",
+          "type": "uint64"
+        },
+        {
+          "name": "nonce",
+          "type": "uint64"
+        },
+        {
+          "name": "bidPay",
+          "type": "pay"
+        },
+        {
+          "name": "quantity",
+          "type": "uint64"
+        },
+        {
+          "name": "unitaryPrice",
+          "type": "uint64"
+        }
+      ],
+      "returns": {
+        "type": "void"
+      }
+    },
+    {
+      "name": "acceptBid",
+      "args": [
+        {
+          "name": "asset",
+          "type": "uint64"
+        },
+        {
+          "name": "nonce",
+          "type": "uint64"
+        }
+      ],
+      "returns": {
+        "type": "void"
+      }
+    },
+    {
+      "name": "withdraw",
+      "args": [
+        {
+          "name": "asset",
+          "type": "uint64"
+        },
+        {
+          "name": "nonce",
           "type": "uint64"
         }
       ],

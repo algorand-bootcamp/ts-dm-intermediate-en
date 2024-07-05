@@ -26,61 +26,60 @@ export function create(
 export function sell(
   algorand: algokit.AlgorandClient,
   dmClient: DigitalMarketplaceClient,
-  seller: string,
-  amountToSell: bigint,
+  sender: string,
+  amount: bigint,
   unitaryPrice: bigint,
 ) {
   return async () => {
-    const newAssetId = await algorand.send.assetCreate({
-      sender: seller,
-      total: BigInt(100_000),
+    const assetCreateResult = await algorand.send.assetCreate({
+      sender,
+      total: 10_000n,
       decimals: 3,
     })
 
-    if (!newAssetId.confirmation.assetIndex) {
+    if (!assetCreateResult.confirmation.assetIndex) {
       throw new Error()
     }
 
     const { appAddress } = await dmClient.appClient.getAppReference()
 
-    const mbrPayAllowASA = await algorand.transactions.payment({
-      sender: seller,
+    const mbrPayAllowAsset = await algorand.transactions.payment({
+      sender,
       receiver: appAddress,
       amount: algokit.algos(0.1),
       extraFee: algokit.algos(0.001),
     })
     await dmClient.allowAsset({
-      mbrPay: mbrPayAllowASA,
-      asset: newAssetId.confirmation.assetIndex,
+      mbrPay: mbrPayAllowAsset,
+      asset: assetCreateResult.confirmation.assetIndex,
     })
 
-    const mbrPayDeposit = await algorand.transactions.payment({
-      sender: seller,
+    const mbrPayFirstDeposit = await algorand.transactions.payment({
+      sender,
       receiver: appAddress,
-      amount: algokit.algos(0.0281),
+      amount: algokit.microAlgos(2_500 + 400 * 112),
     })
-    const firstXfer = await algorand.transactions.assetTransfer({
-      sender: seller,
-      assetId: BigInt(newAssetId.confirmation.assetIndex),
-      amount: amountToSell - 1n,
+    const xferFirstDeposit = await algorand.transactions.assetTransfer({
+      assetId: BigInt(assetCreateResult.confirmation.assetIndex),
+      sender,
       receiver: appAddress,
+      amount: 1n,
     })
-
     await dmClient.firstDeposit({
-      mbrPay: mbrPayDeposit,
-      xfer: firstXfer,
+      mbrPay: mbrPayFirstDeposit,
+      xfer: xferFirstDeposit,
       nonce: 0,
       unitaryPrice,
     })
 
-    const secondXfer = await algorand.transactions.assetTransfer({
-      sender: seller,
-      assetId: BigInt(newAssetId.confirmation.assetIndex),
-      amount: 1n,
+    const xferDeposit = await algorand.transactions.assetTransfer({
+      assetId: BigInt(assetCreateResult.confirmation.assetIndex),
+      sender,
       receiver: appAddress,
+      amount: amount - 1n,
     })
     await dmClient.deposit({
-      xfer: secondXfer,
+      xfer: xferDeposit,
       nonce: 0,
     })
   }
@@ -89,31 +88,30 @@ export function sell(
 export function buy(
   algorand: algokit.AlgorandClient,
   dmClient: DigitalMarketplaceClient,
-  sender: string,
-  sellerAddress: string,
-  assetId: bigint,
-  nonce: bigint,
+  owner: string,
+  asset: bigint,
+  buyer: string,
   quantity: bigint,
   unitaryPrice: bigint,
 ) {
   return async () => {
     await algorand.send.assetOptIn({
-      sender,
-      assetId,
+      assetId: asset,
+      sender: buyer,
     })
 
-    const buyerTxn = await algorand.transactions.payment({
-      sender,
-      receiver: sellerAddress,
-      amount: algokit.microAlgos(Number(quantity * unitaryPrice) / 1e3),
+    const buyPay = await algorand.transactions.payment({
+      sender: buyer,
+      receiver: owner,
+      amount: algokit.microAlgos(Number((quantity * unitaryPrice) / BigInt(1e3))),
       extraFee: algokit.algos(0.001),
     })
 
     await dmClient.buy({
-      owner: sellerAddress,
-      asset: assetId,
-      nonce,
-      buyPay: buyerTxn,
+      owner,
+      asset,
+      nonce: 0n,
+      buyPay,
       quantity,
     })
   }

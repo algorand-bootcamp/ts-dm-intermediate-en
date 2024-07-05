@@ -1,8 +1,8 @@
 // src/components/Home.tsx
-import { Config as AlgokitConfig } from '@algorandfoundation/algokit-utils'
+import { Config as AlgokitConfig, microAlgos } from '@algorandfoundation/algokit-utils'
 import AlgorandClient from '@algorandfoundation/algokit-utils/types/algorand-client'
 import { useWallet } from '@txnlab/use-wallet'
-import { decodeUint64, encodeAddress } from 'algosdk'
+import algosdk, { decodeAddress, decodeUint64, encodeAddress, encodeUint64 } from 'algosdk'
 import React, { useState } from 'react'
 import ConnectWallet from './components/ConnectWallet'
 import MethodCall from './components/MethodCall'
@@ -23,9 +23,9 @@ const Home: React.FC<HomeProps> = () => {
   const listingsQuery = useQuery({
     queryKey: ['listings', appId],
     queryFn: async () => {
-      const allBoxesNames = await algorand.client.algod.getApplicationBoxes(appId).do()
+      const boxNames = await algorand.client.algod.getApplicationBoxes(appId).do()
       return await Promise.all(
-        allBoxesNames.boxes.map(async (box) => {
+        boxNames.boxes.map(async (box) => {
           const boxContent = await algorand.client.algod.getApplicationBoxByName(appId, box.name).do()
           return {
             seller: encodeAddress(box.name.slice(0, 32)),
@@ -40,10 +40,26 @@ const Home: React.FC<HomeProps> = () => {
     staleTime: 1_000,
   })
   const [sellerAddress, setSellerAddress] = useState<string>('')
-  const [assetToBuy, setAssetToBuy] = useState<bigint>(0n)
-  const [buyingNonce, setBuyingNonce] = useState<bigint>(0n)
-  const [buyingPrice, setBuyingPrice] = useState<bigint>(0n)
+  const [buyingAssetId, setBuyingAssetId] = useState<bigint>(0n)
+  const bestBidQuery = useQuery({
+    queryKey: ['bid', appId, sellerAddress, Number(buyingAssetId)],
+    queryFn: async () => {
+      const boxContent = await algorand.client.algod
+        .getApplicationBoxByName(
+          appId,
+          new Uint8Array([...decodeAddress(sellerAddress).publicKey, ...encodeUint64(buyingAssetId), ...encodeUint64(0)]),
+        )
+        .do()
+      return {
+        bidder: encodeAddress(boxContent.value.slice(16, 48)),
+        bidQuantity: decodeUint64(boxContent.value.slice(48, 56), 'bigint'),
+        bidUnitaryPrice: decodeUint64(boxContent.value.slice(56, 64), 'bigint'),
+      }
+    },
+    staleTime: 1_000,
+  })
   const [buyingQuantity, setBuyingQuantity] = useState<bigint>(0n)
+  const [buyingPrice, setBuyingPrice] = useState<bigint>(0n)
   const { activeAddress, signer } = useWallet()
 
   const algodConfig = getAlgodConfigFromViteEnvironment()
@@ -97,25 +113,97 @@ const Home: React.FC<HomeProps> = () => {
 
             <div className="divider" />
 
-            {activeAddress && appId !== 0 && (
+            {appId !== 0 && activeAddress && (
               <div>
                 <label className="label">Amount To Sell</label>
                 <input
-                  type="text"
-                  className="input input-bordered"
+                  type="number"
+                  className="input input-bordered m-2"
                   value={amountToSell.toString()}
-                  onChange={(e) => setAmountToSell(BigInt(e.currentTarget.value || 0))}
+                  onChange={(e) => setAmountToSell(BigInt(e.currentTarget.valueAsNumber || 0n))}
                 />
                 <label className="label">Selling Price</label>
                 <input
-                  type="text"
-                  className="input input-bordered"
+                  type="number"
+                  className="input input-bordered m-2"
                   value={sellingPrice.toString()}
-                  onChange={(e) => setSellingPrice(BigInt(e.currentTarget.value || 0))}
+                  onChange={(e) => setSellingPrice(BigInt(e.currentTarget.valueAsNumber || 0n))}
                 />
                 <MethodCall
                   methodFunction={methods.sell(algorand, dmClient, activeAddress, amountToSell, sellingPrice)}
-                  text="Sell a new asset"
+                  text="Create New Listing"
+                />
+              </div>
+            )}
+
+            <div className="divider" />
+
+            <label className="label">Listings</label>
+            {appId !== 0 && !listingsQuery.isError && (
+              <ul>
+                {listingsQuery.data?.map((listing) => (
+                  <li
+                    key={listing.seller + listing.assetId.toString() + listing.nonce.toString()}
+                  >{`assetId: ${listing.assetId}\namount: ${listing.amount}\nprice: ${listing.unitaryPrice}`}</li>
+                ))}
+              </ul>
+            )}
+
+            <div className="divider" />
+
+            {activeAddress && appId !== 0 && (
+              <div>
+                <label className="label">Seller Address</label>
+                <input
+                  type="text"
+                  className="input input-bordered m-2"
+                  value={sellerAddress}
+                  onChange={(e) => setSellerAddress(e.currentTarget.value)}
+                />
+                <label className="label">Asset To Buy</label>
+                <input
+                  type="number"
+                  className="input input-bordered m-2"
+                  value={buyingAssetId.toString()}
+                  onChange={(e) => setBuyingAssetId(BigInt(e.currentTarget.valueAsNumber || 0n))}
+                />
+                <label className="label">Amount</label>
+                <input
+                  type="number"
+                  className="input input-bordered m-2"
+                  value={buyingQuantity.toString()}
+                  onChange={(e) => setBuyingQuantity(BigInt(e.currentTarget.valueAsNumber || 0n))}
+                />
+                <label className="label">Price</label>
+                <input
+                  type="number"
+                  className="input input-bordered m-2"
+                  value={buyingPrice.toString()}
+                  onChange={(e) => setBuyingPrice(BigInt(e.currentTarget.valueAsNumber || 0n))}
+                />
+                <MethodCall
+                  methodFunction={methods.buy(algorand, dmClient, sellerAddress, buyingAssetId, activeAddress, buyingQuantity, buyingPrice)}
+                  text={`Buy ${buyingQuantity} unit for ${Number(buyingPrice * buyingQuantity) / 1e9} ALGO`}
+                />
+                <MethodCall
+                  methodFunction={async () => {
+                    const { appAddress } = await dmClient.appClient.getAppReference()
+
+                    await dmClient.bid({
+                      owner: sellerAddress,
+                      asset: buyingAssetId,
+                      nonce: 0n,
+                      bidPay: await algorand.transactions.payment({
+                        sender: activeAddress,
+                        receiver: appAddress,
+                        amount: microAlgos(Number(buyingPrice * buyingQuantity) / 1e3),
+                        extraFee: microAlgos(1_000),
+                      }),
+                      quantity: buyingQuantity,
+                      unitaryPrice: buyingPrice,
+                    })
+                  }}
+                  text={`Bid ${Number(buyingPrice * buyingQuantity) / 1e9} ALGO for ${buyingQuantity} unit of ASA`}
                 />
               </div>
             )}
@@ -123,81 +211,34 @@ const Home: React.FC<HomeProps> = () => {
             <div className="divider" />
 
             <div>
-              <label className="label">Listings</label>
-              {appId !== 0 && !listingsQuery.isError && (
-                <ul>
-                  {listingsQuery.data?.map((listing) => (
-                    <li
-                      key={listing.seller + listing.assetId.toString() + listing.nonce.toString()}
-                    >{`assetId: ${listing.assetId}\namount: ${listing.amount}\nprice: ${listing.unitaryPrice}`}</li>
-                  ))}
-                </ul>
+              <label className="label">Best bid</label>
+              {!bestBidQuery.isError && bestBidQuery.data && (
+                <div>
+                  {`quantity: ${bestBidQuery.data.bidQuantity}\nprice: ${bestBidQuery.data.bidUnitaryPrice}`}
+                  <MethodCall
+                    methodFunction={async () => {
+                      await dmClient.acceptBid(
+                        {
+                          asset: buyingAssetId,
+                          nonce: 0n,
+                        },
+                        { sendParams: { fee: microAlgos(3_000) } },
+                      )
+                    }}
+                    text={`Accept ${Number(bestBidQuery.data.bidQuantity * bestBidQuery.data.bidUnitaryPrice) / 1e9} ALGO bid`}
+                  />
+                </div>
               )}
             </div>
 
-            <div className="divider" />
-
-            {activeAddress && appId !== 0 && (
-              <div>
-                <label className="label">Seller</label>
-                <input
-                  type="text"
-                  className="input input-bordered"
-                  value={sellerAddress}
-                  onChange={(e) => setSellerAddress(e.currentTarget.value)}
-                />
-                <label className="label">Asset To Buy</label>
-                <input
-                  type="text"
-                  className="input input-bordered"
-                  value={assetToBuy.toString()}
-                  onChange={(e) => setAssetToBuy(BigInt(e.currentTarget.value || 0))}
-                />
-                <label className="label">Nonce</label>
-                <input
-                  type="text"
-                  className="input input-bordered"
-                  value={buyingNonce.toString()}
-                  onChange={(e) => setBuyingNonce(BigInt(e.currentTarget.value || 0))}
-                />
-                <label className="label">Price Per Unit</label>
-                <input
-                  type="text"
-                  className="input input-bordered"
-                  value={buyingPrice.toString()}
-                  onChange={(e) => setBuyingPrice(BigInt(e.currentTarget.value || 0))}
-                />
-                <label className="label">Desired Quantity</label>
-                <input
-                  type="number"
-                  className="input input-bordered"
-                  value={buyingQuantity.toString()}
-                  onChange={(e) => setBuyingQuantity(BigInt(e.currentTarget.value || 0))}
-                />
-                <MethodCall
-                  methodFunction={methods.buy(
-                    algorand,
-                    dmClient,
-                    activeAddress,
-                    sellerAddress,
-                    assetToBuy,
-                    buyingNonce,
-                    buyingQuantity,
-                    buyingPrice,
-                  )}
-                  text={`Buy ${buyingQuantity} unit for ${buyingPrice * BigInt(buyingQuantity)} microALGO`}
-                />
-              </div>
-            )}
-
-            {/*{activeAddress !== seller && appId !== 0 && unitsLeft === 0n && (*/}
+            {/*{activeAddress !== sellerAddress && appId !== 0 && unitsLeft === 0n && (*/}
             {/*  <button className="btn btn-disabled m-2" disabled={true}>*/}
             {/*    SOLD OUT!*/}
             {/*  </button>*/}
             {/*)}*/}
 
-            {/*{activeAddress === seller && appId !== 0 && unitsLeft === 0n && (*/}
-            {/*  <MethodCall methodFunction={methods.deleteApp(dmClient, setAppId)} text="Delete App"/>*/}
+            {/*{activeAddress === sellerAddress && appId !== 0 && unitsLeft === 0n && (*/}
+            {/*  <MethodCall methodFunction={methods.deleteApp(dmClient, setAppId)} text="Delete App" />*/}
             {/*)}*/}
           </div>
 
