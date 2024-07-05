@@ -298,10 +298,6 @@ firstDeposit:
 deposit:
 	proto 2 0
 
-	// Push empty bytes after the frame pointer to reserve space for local variables
-	byte 0x
-	dupn 4
-
 	// contracts\DigitalMarketplace.algo.ts:61
 	// assert(this.listings({ owner: this.txn.sender, asset: xfer.xferAsset, nonce: nonce }).exists)
 	txn Sender
@@ -351,9 +347,9 @@ deposit:
 	assert
 
 	// contracts\DigitalMarketplace.algo.ts:69
-	// currentDeposited = this.listings({ owner: this.txn.sender, asset: xfer.xferAsset, nonce: nonce }).value
-	//       .deposited
+	// this.listings({ owner: this.txn.sender, asset: xfer.xferAsset, nonce: nonce }).value.deposited += xfer.assetAmount
 	int 0
+	dup
 	int 8
 	txn Sender
 	frame_dig -1 // xfer: AssetTransferTxn
@@ -366,111 +362,20 @@ deposit:
 	cover 2
 	box_extract
 	btoi
-	frame_bury 0 // currentDeposited: uint64
-
-	// contracts\DigitalMarketplace.algo.ts:71
-	// currentUnitaryPrice = this.listings({ owner: this.txn.sender, asset: xfer.xferAsset, nonce: nonce }).value
-	//       .unitaryPrice
-	int 8 // headOffset
-	int 8
-	txn Sender
-	frame_dig -1 // xfer: AssetTransferTxn
-	gtxns XferAsset
-	itob
-	concat
-	frame_dig -2 // nonce: uint64
-	itob
-	concat
-	cover 2
-	box_extract
-	btoi
-	frame_bury 1 // currentUnitaryPrice: uint64
-
-	// contracts\DigitalMarketplace.algo.ts:73
-	// currentBidder = this.listings({ owner: this.txn.sender, asset: xfer.xferAsset, nonce: nonce }).value.bidder
-	int 16 // headOffset
-	int 32
-	txn Sender
-	frame_dig -1 // xfer: AssetTransferTxn
-	gtxns XferAsset
-	itob
-	concat
-	frame_dig -2 // nonce: uint64
-	itob
-	concat
-	cover 2
-	box_extract
-	frame_bury 2 // currentBidder: address
-
-	// contracts\DigitalMarketplace.algo.ts:74
-	// currentBidQuantity = this.listings({ owner: this.txn.sender, asset: xfer.xferAsset, nonce: nonce }).value
-	//       .bidQuantity
-	int 48 // headOffset
-	int 8
-	txn Sender
-	frame_dig -1 // xfer: AssetTransferTxn
-	gtxns XferAsset
-	itob
-	concat
-	frame_dig -2 // nonce: uint64
-	itob
-	concat
-	cover 2
-	box_extract
-	btoi
-	frame_bury 3 // currentBidQuantity: uint64
-
-	// contracts\DigitalMarketplace.algo.ts:76
-	// currentBidUnitaryPrice = this.listings({ owner: this.txn.sender, asset: xfer.xferAsset, nonce: nonce }).value
-	//       .bidUnitaryPrice
-	int 56 // headOffset
-	int 8
-	txn Sender
-	frame_dig -1 // xfer: AssetTransferTxn
-	gtxns XferAsset
-	itob
-	concat
-	frame_dig -2 // nonce: uint64
-	itob
-	concat
-	cover 2
-	box_extract
-	btoi
-	frame_bury 4 // currentBidUnitaryPrice: uint64
-
-	// contracts\DigitalMarketplace.algo.ts:79
-	// this.listings({ owner: this.txn.sender, asset: xfer.xferAsset, nonce: nonce }).value = {
-	//       deposited: currentDeposited + xfer.assetAmount,
-	//       unitaryPrice: currentUnitaryPrice,
-	//       bidder: currentBidder,
-	//       bidQuantity: currentBidQuantity,
-	//       bidUnitaryPrice: currentBidUnitaryPrice,
-	//     }
-	txn Sender
-	frame_dig -1 // xfer: AssetTransferTxn
-	gtxns XferAsset
-	itob
-	concat
-	frame_dig -2 // nonce: uint64
-	itob
-	concat
-	frame_dig 0 // currentDeposited: uint64
 	frame_dig -1 // xfer: AssetTransferTxn
 	gtxns AssetAmount
 	+
 	itob
-	frame_dig 1 // currentUnitaryPrice: uint64
+	txn Sender
+	frame_dig -1 // xfer: AssetTransferTxn
+	gtxns XferAsset
 	itob
 	concat
-	frame_dig 2 // currentBidder: address
-	concat
-	frame_dig 3 // currentBidQuantity: uint64
+	frame_dig -2 // nonce: uint64
 	itob
 	concat
-	frame_dig 4 // currentBidUnitaryPrice: uint64
-	itob
-	concat
-	box_put
+	cover 2
+	box_replace
 	retsub
 
 // setPrice(uint64,uint64,uint64)void
@@ -496,103 +401,20 @@ deposit:
 setPrice:
 	proto 3 0
 
-	// Push empty bytes after the frame pointer to reserve space for local variables
-	byte 0x
-	dupn 3
-
-	// contracts\DigitalMarketplace.algo.ts:89
-	// currentDeposited = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value.deposited
-	int 0
-	int 8
-	txn Sender
-	frame_dig -1 // asset: AssetID
-	itob
-	concat
-	frame_dig -2 // nonce: uint64
-	itob
-	concat
-	cover 2
-	box_extract
-	btoi
-	frame_bury 0 // currentDeposited: uint64
-
-	// contracts\DigitalMarketplace.algo.ts:90
-	// currentBidder = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value.bidder
-	int 16 // headOffset
-	int 32
-	txn Sender
-	frame_dig -1 // asset: AssetID
-	itob
-	concat
-	frame_dig -2 // nonce: uint64
-	itob
-	concat
-	cover 2
-	box_extract
-	frame_bury 1 // currentBidder: address
-
-	// contracts\DigitalMarketplace.algo.ts:91
-	// currentBidQuantity = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value.bidQuantity
-	int 48 // headOffset
-	int 8
-	txn Sender
-	frame_dig -1 // asset: AssetID
-	itob
-	concat
-	frame_dig -2 // nonce: uint64
-	itob
-	concat
-	cover 2
-	box_extract
-	btoi
-	frame_bury 2 // currentBidQuantity: uint64
-
-	// contracts\DigitalMarketplace.algo.ts:92
-	// currentBidUnitaryPrice = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value
-	//       .bidUnitaryPrice
-	int 56 // headOffset
-	int 8
-	txn Sender
-	frame_dig -1 // asset: AssetID
-	itob
-	concat
-	frame_dig -2 // nonce: uint64
-	itob
-	concat
-	cover 2
-	box_extract
-	btoi
-	frame_bury 3 // currentBidUnitaryPrice: uint64
-
-	// contracts\DigitalMarketplace.algo.ts:95
-	// this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value = {
-	//       deposited: currentDeposited,
-	//       unitaryPrice: unitaryPrice,
-	//       bidder: currentBidder,
-	//       bidQuantity: currentBidQuantity,
-	//       bidUnitaryPrice: currentBidUnitaryPrice,
-	//     }
-	txn Sender
-	frame_dig -1 // asset: AssetID
-	itob
-	concat
-	frame_dig -2 // nonce: uint64
-	itob
-	concat
-	frame_dig 0 // currentDeposited: uint64
-	itob
+	// contracts\DigitalMarketplace.algo.ts:73
+	// this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value.unitaryPrice = unitaryPrice
+	int 8 // headOffset
 	frame_dig -3 // unitaryPrice: uint64
 	itob
-	concat
-	frame_dig 1 // currentBidder: address
-	concat
-	frame_dig 2 // currentBidQuantity: uint64
+	txn Sender
+	frame_dig -1 // asset: AssetID
 	itob
 	concat
-	frame_dig 3 // currentBidUnitaryPrice: uint64
+	frame_dig -2 // nonce: uint64
 	itob
 	concat
-	box_put
+	cover 2
+	box_replace
 	retsub
 
 // buy(address,uint64,uint64,pay,uint64)void
@@ -642,25 +464,9 @@ buy:
 
 	// Push empty bytes after the frame pointer to reserve space for local variables
 	byte 0x
-	dupn 5
+	dup
 
-	// contracts\DigitalMarketplace.algo.ts:105
-	// currentDeposited = this.listings({ owner: owner, asset: asset, nonce: nonce }).value.deposited
-	int 0
-	int 8
-	frame_dig -1 // owner: Address
-	frame_dig -2 // asset: AssetID
-	itob
-	concat
-	frame_dig -3 // nonce: uint64
-	itob
-	concat
-	cover 2
-	box_extract
-	btoi
-	frame_bury 0 // currentDeposited: uint64
-
-	// contracts\DigitalMarketplace.algo.ts:106
+	// contracts\DigitalMarketplace.algo.ts:77
 	// currentUnitaryPrice = this.listings({ owner: owner, asset: asset, nonce: nonce }).value.unitaryPrice
 	int 8 // headOffset
 	int 8
@@ -674,58 +480,11 @@ buy:
 	cover 2
 	box_extract
 	btoi
-	frame_bury 1 // currentUnitaryPrice: uint64
+	frame_bury 0 // currentUnitaryPrice: uint64
 
-	// contracts\DigitalMarketplace.algo.ts:107
-	// currentBidder = this.listings({ owner: owner, asset: asset, nonce: nonce }).value.bidder
-	int 16 // headOffset
-	int 32
-	frame_dig -1 // owner: Address
-	frame_dig -2 // asset: AssetID
-	itob
-	concat
-	frame_dig -3 // nonce: uint64
-	itob
-	concat
-	cover 2
-	box_extract
-	frame_bury 2 // currentBidder: address
-
-	// contracts\DigitalMarketplace.algo.ts:108
-	// currentBidQuantity = this.listings({ owner: owner, asset: asset, nonce: nonce }).value.bidQuantity
-	int 48 // headOffset
-	int 8
-	frame_dig -1 // owner: Address
-	frame_dig -2 // asset: AssetID
-	itob
-	concat
-	frame_dig -3 // nonce: uint64
-	itob
-	concat
-	cover 2
-	box_extract
-	btoi
-	frame_bury 3 // currentBidQuantity: uint64
-
-	// contracts\DigitalMarketplace.algo.ts:109
-	// currentBidUnitaryPrice = this.listings({ owner: owner, asset: asset, nonce: nonce }).value.bidUnitaryPrice
-	int 56 // headOffset
-	int 8
-	frame_dig -1 // owner: Address
-	frame_dig -2 // asset: AssetID
-	itob
-	concat
-	frame_dig -3 // nonce: uint64
-	itob
-	concat
-	cover 2
-	box_extract
-	btoi
-	frame_bury 4 // currentBidUnitaryPrice: uint64
-
-	// contracts\DigitalMarketplace.algo.ts:111
+	// contracts\DigitalMarketplace.algo.ts:79
 	// amountToBePaid = wideRatio([currentUnitaryPrice, quantity], [10 ** asset.decimals])
-	frame_dig 1 // currentUnitaryPrice: uint64
+	frame_dig 0 // currentUnitaryPrice: uint64
 	frame_dig -5 // quantity: uint64
 	mulw
 	int 0
@@ -742,9 +501,9 @@ buy:
 
 	// wideRatio failed
 	assert
-	frame_bury 5 // amountToBePaid: uint64
+	frame_bury 1 // amountToBePaid: uint64
 
-	// contracts\DigitalMarketplace.algo.ts:113
+	// contracts\DigitalMarketplace.algo.ts:81
 	// verifyPayTxn(buyPay, {
 	//       sender: this.txn.sender,
 	//       receiver: owner,
@@ -771,13 +530,13 @@ buy:
 	// verify amount
 	frame_dig -4 // buyPay: PayTxn
 	gtxns Amount
-	frame_dig 5 // amountToBePaid: uint64
+	frame_dig 1 // amountToBePaid: uint64
 	==
 
 	// transaction verification failed: {"txn":"buyPay","field":"amount","expected":"amountToBePaid"}
 	assert
 
-	// contracts\DigitalMarketplace.algo.ts:119
+	// contracts\DigitalMarketplace.algo.ts:87
 	// sendAssetTransfer({
 	//       xferAsset: asset,
 	//       assetReceiver: this.txn.sender,
@@ -787,17 +546,17 @@ buy:
 	int axfer
 	itxn_field TypeEnum
 
-	// contracts\DigitalMarketplace.algo.ts:120
+	// contracts\DigitalMarketplace.algo.ts:88
 	// xferAsset: asset
 	frame_dig -2 // asset: AssetID
 	itxn_field XferAsset
 
-	// contracts\DigitalMarketplace.algo.ts:121
+	// contracts\DigitalMarketplace.algo.ts:89
 	// assetReceiver: this.txn.sender
 	txn Sender
 	itxn_field AssetReceiver
 
-	// contracts\DigitalMarketplace.algo.ts:122
+	// contracts\DigitalMarketplace.algo.ts:90
 	// assetAmount: quantity
 	frame_dig -5 // quantity: uint64
 	itxn_field AssetAmount
@@ -809,14 +568,11 @@ buy:
 	// Submit inner transaction
 	itxn_submit
 
-	// contracts\DigitalMarketplace.algo.ts:125
-	// this.listings({ owner: owner, asset: asset, nonce: nonce }).value = {
-	//       deposited: currentDeposited - quantity,
-	//       unitaryPrice: currentUnitaryPrice,
-	//       bidder: currentBidder,
-	//       bidQuantity: currentBidQuantity,
-	//       bidUnitaryPrice: currentBidUnitaryPrice,
-	//     }
+	// contracts\DigitalMarketplace.algo.ts:93
+	// this.listings({ owner: owner, asset: asset, nonce: nonce }).value.deposited -= quantity
+	int 0
+	dup
+	int 8
 	frame_dig -1 // owner: Address
 	frame_dig -2 // asset: AssetID
 	itob
@@ -824,22 +580,21 @@ buy:
 	frame_dig -3 // nonce: uint64
 	itob
 	concat
-	frame_dig 0 // currentDeposited: uint64
+	cover 2
+	box_extract
+	btoi
 	frame_dig -5 // quantity: uint64
 	-
 	itob
-	frame_dig 1 // currentUnitaryPrice: uint64
+	frame_dig -1 // owner: Address
+	frame_dig -2 // asset: AssetID
 	itob
 	concat
-	frame_dig 2 // currentBidder: address
-	concat
-	frame_dig 3 // currentBidQuantity: uint64
+	frame_dig -3 // nonce: uint64
 	itob
 	concat
-	frame_dig 4 // currentBidUnitaryPrice: uint64
-	itob
-	concat
-	box_put
+	cover 2
+	box_replace
 	retsub
 
 // bid(address,uint64,uint64,pay,uint64,uint64)void
@@ -893,9 +648,9 @@ bid:
 
 	// Push empty bytes after the frame pointer to reserve space for local variables
 	byte 0x
-	dupn 6
+	dupn 4
 
-	// contracts\DigitalMarketplace.algo.ts:135
+	// contracts\DigitalMarketplace.algo.ts:97
 	// assert(this.txn.sender.isOptedInToAsset(asset))
 	txn Sender
 	frame_dig -2 // asset: AssetID
@@ -904,46 +659,7 @@ bid:
 	pop
 	assert
 
-	// contracts\DigitalMarketplace.algo.ts:137
-	// currentDeposited = this.listings({ owner: owner, asset: asset, nonce: nonce }).value.deposited
-	int 0
-	int 8
-	frame_dig -1 // owner: Address
-	frame_dig -2 // asset: AssetID
-	itob
-	concat
-	frame_dig -3 // nonce: uint64
-	itob
-	concat
-	cover 2
-	box_extract
-	btoi
-	frame_bury 0 // currentDeposited: uint64
-
-	// contracts\DigitalMarketplace.algo.ts:138
-	// currentUnitaryPrice = this.listings({ owner: owner, asset: asset, nonce: nonce }).value.unitaryPrice
-	int 8 // headOffset
-	int 8
-	frame_dig -1 // owner: Address
-	frame_dig -2 // asset: AssetID
-	itob
-	concat
-	frame_dig -3 // nonce: uint64
-	itob
-	concat
-	cover 2
-	box_extract
-	btoi
-	frame_bury 1 // currentUnitaryPrice: uint64
-
-	// contracts\DigitalMarketplace.algo.ts:139
-	// assert(quantity <= currentDeposited)
-	frame_dig -5 // quantity: uint64
-	frame_dig 0 // currentDeposited: uint64
-	<=
-	assert
-
-	// contracts\DigitalMarketplace.algo.ts:141
+	// contracts\DigitalMarketplace.algo.ts:99
 	// currentBidder = this.listings({ owner: owner, asset: asset, nonce: nonce }).value.bidder
 	int 16 // headOffset
 	int 32
@@ -956,18 +672,18 @@ bid:
 	concat
 	cover 2
 	box_extract
-	frame_bury 2 // currentBidder: address
+	frame_bury 0 // currentBidder: address
 
 	// *if0_condition
-	// contracts\DigitalMarketplace.algo.ts:142
+	// contracts\DigitalMarketplace.algo.ts:100
 	// currentBidder !== globals.zeroAddress
-	frame_dig 2 // currentBidder: address
+	frame_dig 0 // currentBidder: address
 	global ZeroAddress
 	!=
 	bz *if0_end
 
 	// *if0_consequent
-	// contracts\DigitalMarketplace.algo.ts:143
+	// contracts\DigitalMarketplace.algo.ts:101
 	// currentBidQuantity = this.listings({ owner: owner, asset: asset, nonce: nonce }).value.bidQuantity
 	int 48 // headOffset
 	int 8
@@ -981,9 +697,9 @@ bid:
 	cover 2
 	box_extract
 	btoi
-	frame_bury 3 // currentBidQuantity: uint64
+	frame_bury 1 // currentBidQuantity: uint64
 
-	// contracts\DigitalMarketplace.algo.ts:144
+	// contracts\DigitalMarketplace.algo.ts:102
 	// currentBidUnitaryPrice = this.listings({ owner: owner, asset: asset, nonce: nonce }).value.bidUnitaryPrice
 	int 56 // headOffset
 	int 8
@@ -997,19 +713,19 @@ bid:
 	cover 2
 	box_extract
 	btoi
-	frame_bury 4 // currentBidUnitaryPrice: uint64
+	frame_bury 2 // currentBidUnitaryPrice: uint64
 
-	// contracts\DigitalMarketplace.algo.ts:145
+	// contracts\DigitalMarketplace.algo.ts:103
 	// assert(unitaryPrice > currentBidUnitaryPrice)
 	frame_dig -6 // unitaryPrice: uint64
-	frame_dig 4 // currentBidUnitaryPrice: uint64
+	frame_dig 2 // currentBidUnitaryPrice: uint64
 	>
 	assert
 
-	// contracts\DigitalMarketplace.algo.ts:147
+	// contracts\DigitalMarketplace.algo.ts:105
 	// currentBidDeposit = wideRatio([currentBidUnitaryPrice, currentBidQuantity], [10 ** asset.decimals])
-	frame_dig 4 // currentBidUnitaryPrice: uint64
-	frame_dig 3 // currentBidQuantity: uint64
+	frame_dig 2 // currentBidUnitaryPrice: uint64
+	frame_dig 1 // currentBidQuantity: uint64
 	mulw
 	int 0
 	int 10
@@ -1025,9 +741,9 @@ bid:
 
 	// wideRatio failed
 	assert
-	frame_bury 5 // currentBidDeposit: uint64
+	frame_bury 3 // currentBidDeposit: uint64
 
-	// contracts\DigitalMarketplace.algo.ts:148
+	// contracts\DigitalMarketplace.algo.ts:106
 	// sendPayment({
 	//         receiver: currentBidder,
 	//         amount: currentBidDeposit,
@@ -1036,14 +752,14 @@ bid:
 	int pay
 	itxn_field TypeEnum
 
-	// contracts\DigitalMarketplace.algo.ts:149
+	// contracts\DigitalMarketplace.algo.ts:107
 	// receiver: currentBidder
-	frame_dig 2 // currentBidder: address
+	frame_dig 0 // currentBidder: address
 	itxn_field Receiver
 
-	// contracts\DigitalMarketplace.algo.ts:150
+	// contracts\DigitalMarketplace.algo.ts:108
 	// amount: currentBidDeposit
-	frame_dig 5 // currentBidDeposit: uint64
+	frame_dig 3 // currentBidDeposit: uint64
 	itxn_field Amount
 
 	// Fee field not set, defaulting to 0
@@ -1054,7 +770,7 @@ bid:
 	itxn_submit
 
 *if0_end:
-	// contracts\DigitalMarketplace.algo.ts:154
+	// contracts\DigitalMarketplace.algo.ts:112
 	// bidDeposit = wideRatio([unitaryPrice, quantity], [10 ** asset.decimals])
 	frame_dig -6 // unitaryPrice: uint64
 	frame_dig -5 // quantity: uint64
@@ -1073,9 +789,9 @@ bid:
 
 	// wideRatio failed
 	assert
-	frame_bury 6 // bidDeposit: uint64
+	frame_bury 4 // bidDeposit: uint64
 
-	// contracts\DigitalMarketplace.algo.ts:155
+	// contracts\DigitalMarketplace.algo.ts:113
 	// verifyPayTxn(bidPay, {
 	//       sender: this.txn.sender,
 	//       receiver: this.app.address,
@@ -1102,20 +818,16 @@ bid:
 	// verify amount
 	frame_dig -4 // bidPay: PayTxn
 	gtxns Amount
-	frame_dig 6 // bidDeposit: uint64
+	frame_dig 4 // bidDeposit: uint64
 	==
 
 	// transaction verification failed: {"txn":"bidPay","field":"amount","expected":"bidDeposit"}
 	assert
 
-	// contracts\DigitalMarketplace.algo.ts:161
-	// this.listings({ owner: owner, asset: asset, nonce: nonce }).value = {
-	//       deposited: currentDeposited,
-	//       unitaryPrice: currentUnitaryPrice,
-	//       bidder: this.txn.sender,
-	//       bidQuantity: quantity,
-	//       bidUnitaryPrice: unitaryPrice,
-	//     }
+	// contracts\DigitalMarketplace.algo.ts:119
+	// this.listings({ owner: owner, asset: asset, nonce: nonce }).value.bidder = this.txn.sender
+	int 16 // headOffset
+	txn Sender
 	frame_dig -1 // owner: Address
 	frame_dig -2 // asset: AssetID
 	itob
@@ -1123,20 +835,38 @@ bid:
 	frame_dig -3 // nonce: uint64
 	itob
 	concat
-	frame_dig 0 // currentDeposited: uint64
-	itob
-	frame_dig 1 // currentUnitaryPrice: uint64
-	itob
-	concat
-	txn Sender
-	concat
+	cover 2
+	box_replace
+
+	// contracts\DigitalMarketplace.algo.ts:120
+	// this.listings({ owner: owner, asset: asset, nonce: nonce }).value.bidQuantity = quantity
+	int 48 // headOffset
 	frame_dig -5 // quantity: uint64
 	itob
-	concat
-	frame_dig -6 // unitaryPrice: uint64
+	frame_dig -1 // owner: Address
+	frame_dig -2 // asset: AssetID
 	itob
 	concat
-	box_put
+	frame_dig -3 // nonce: uint64
+	itob
+	concat
+	cover 2
+	box_replace
+
+	// contracts\DigitalMarketplace.algo.ts:121
+	// this.listings({ owner: owner, asset: asset, nonce: nonce }).value.bidUnitaryPrice = unitaryPrice
+	int 56 // headOffset
+	frame_dig -6 // unitaryPrice: uint64
+	itob
+	frame_dig -1 // owner: Address
+	frame_dig -2 // asset: AssetID
+	itob
+	concat
+	frame_dig -3 // nonce: uint64
+	itob
+	concat
+	cover 2
+	box_replace
 	retsub
 
 // acceptBid(uint64,uint64)void
@@ -1160,9 +890,9 @@ acceptBid:
 
 	// Push empty bytes after the frame pointer to reserve space for local variables
 	byte 0x
-	dupn 6
+	dupn 5
 
-	// contracts\DigitalMarketplace.algo.ts:171
+	// contracts\DigitalMarketplace.algo.ts:125
 	// currentDeposited = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value.deposited
 	int 0
 	int 8
@@ -1178,24 +908,7 @@ acceptBid:
 	btoi
 	frame_bury 0 // currentDeposited: uint64
 
-	// contracts\DigitalMarketplace.algo.ts:172
-	// currentUnitaryPrice = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value
-	//       .unitaryPrice
-	int 8 // headOffset
-	int 8
-	txn Sender
-	frame_dig -1 // asset: AssetID
-	itob
-	concat
-	frame_dig -2 // nonce: uint64
-	itob
-	concat
-	cover 2
-	box_extract
-	btoi
-	frame_bury 1 // currentUnitaryPrice: uint64
-
-	// contracts\DigitalMarketplace.algo.ts:174
+	// contracts\DigitalMarketplace.algo.ts:126
 	// currentBidder = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value.bidder
 	int 16 // headOffset
 	int 32
@@ -1208,9 +921,9 @@ acceptBid:
 	concat
 	cover 2
 	box_extract
-	frame_bury 2 // currentBidder: address
+	frame_bury 1 // currentBidder: address
 
-	// contracts\DigitalMarketplace.algo.ts:175
+	// contracts\DigitalMarketplace.algo.ts:127
 	// currentBidQuantity = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value.bidQuantity
 	int 48 // headOffset
 	int 8
@@ -1224,9 +937,9 @@ acceptBid:
 	cover 2
 	box_extract
 	btoi
-	frame_bury 3 // currentBidQuantity: uint64
+	frame_bury 2 // currentBidQuantity: uint64
 
-	// contracts\DigitalMarketplace.algo.ts:176
+	// contracts\DigitalMarketplace.algo.ts:128
 	// currentBidUnitaryPrice = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value
 	//       .bidUnitaryPrice
 	int 56 // headOffset
@@ -1241,31 +954,31 @@ acceptBid:
 	cover 2
 	box_extract
 	btoi
-	frame_bury 4 // currentBidUnitaryPrice: uint64
+	frame_bury 3 // currentBidUnitaryPrice: uint64
 
-	// contracts\DigitalMarketplace.algo.ts:179
+	// contracts\DigitalMarketplace.algo.ts:131
 	// assert(currentBidder !== globals.zeroAddress)
-	frame_dig 2 // currentBidder: address
+	frame_dig 1 // currentBidder: address
 	global ZeroAddress
 	!=
 	assert
 
-	// contracts\DigitalMarketplace.algo.ts:181
+	// contracts\DigitalMarketplace.algo.ts:133
 	// minQuantity = currentDeposited < currentBidQuantity ? currentDeposited : currentBidQuantity
 	frame_dig 0 // currentDeposited: uint64
-	frame_dig 3 // currentBidQuantity: uint64
+	frame_dig 2 // currentBidQuantity: uint64
 	<
 	bz *ternary0_false
 	frame_dig 0 // currentDeposited: uint64
 	b *ternary0_end
 
 *ternary0_false:
-	frame_dig 3 // currentBidQuantity: uint64
+	frame_dig 2 // currentBidQuantity: uint64
 
 *ternary0_end:
-	frame_bury 5 // minQuantity: uint64
+	frame_bury 4 // minQuantity: uint64
 
-	// contracts\DigitalMarketplace.algo.ts:182
+	// contracts\DigitalMarketplace.algo.ts:134
 	// sendAssetTransfer({
 	//       xferAsset: asset,
 	//       assetReceiver: currentBidder,
@@ -1275,19 +988,19 @@ acceptBid:
 	int axfer
 	itxn_field TypeEnum
 
-	// contracts\DigitalMarketplace.algo.ts:183
+	// contracts\DigitalMarketplace.algo.ts:135
 	// xferAsset: asset
 	frame_dig -1 // asset: AssetID
 	itxn_field XferAsset
 
-	// contracts\DigitalMarketplace.algo.ts:184
+	// contracts\DigitalMarketplace.algo.ts:136
 	// assetReceiver: currentBidder
-	frame_dig 2 // currentBidder: address
+	frame_dig 1 // currentBidder: address
 	itxn_field AssetReceiver
 
-	// contracts\DigitalMarketplace.algo.ts:185
+	// contracts\DigitalMarketplace.algo.ts:137
 	// assetAmount: minQuantity
-	frame_dig 5 // minQuantity: uint64
+	frame_dig 4 // minQuantity: uint64
 	itxn_field AssetAmount
 
 	// Fee field not set, defaulting to 0
@@ -1297,10 +1010,10 @@ acceptBid:
 	// Submit inner transaction
 	itxn_submit
 
-	// contracts\DigitalMarketplace.algo.ts:188
+	// contracts\DigitalMarketplace.algo.ts:140
 	// currentBidDeposit = wideRatio([currentBidUnitaryPrice, currentBidQuantity], [10 ** asset.decimals])
-	frame_dig 4 // currentBidUnitaryPrice: uint64
-	frame_dig 3 // currentBidQuantity: uint64
+	frame_dig 3 // currentBidUnitaryPrice: uint64
+	frame_dig 2 // currentBidQuantity: uint64
 	mulw
 	int 0
 	int 10
@@ -1316,9 +1029,9 @@ acceptBid:
 
 	// wideRatio failed
 	assert
-	frame_bury 6 // currentBidDeposit: uint64
+	frame_bury 5 // currentBidDeposit: uint64
 
-	// contracts\DigitalMarketplace.algo.ts:189
+	// contracts\DigitalMarketplace.algo.ts:141
 	// sendPayment({
 	//       receiver: this.txn.sender,
 	//       amount: currentBidDeposit,
@@ -1327,14 +1040,14 @@ acceptBid:
 	int pay
 	itxn_field TypeEnum
 
-	// contracts\DigitalMarketplace.algo.ts:190
+	// contracts\DigitalMarketplace.algo.ts:142
 	// receiver: this.txn.sender
 	txn Sender
 	itxn_field Receiver
 
-	// contracts\DigitalMarketplace.algo.ts:191
+	// contracts\DigitalMarketplace.algo.ts:143
 	// amount: currentBidDeposit
-	frame_dig 6 // currentBidDeposit: uint64
+	frame_dig 5 // currentBidDeposit: uint64
 	itxn_field Amount
 
 	// Fee field not set, defaulting to 0
@@ -1344,14 +1057,11 @@ acceptBid:
 	// Submit inner transaction
 	itxn_submit
 
-	// contracts\DigitalMarketplace.algo.ts:194
-	// this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value = {
-	//       deposited: currentDeposited - minQuantity,
-	//       unitaryPrice: currentUnitaryPrice,
-	//       bidder: currentBidder,
-	//       bidQuantity: currentBidQuantity - minQuantity,
-	//       bidUnitaryPrice: currentBidUnitaryPrice,
-	//     }
+	// contracts\DigitalMarketplace.algo.ts:146
+	// this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value.deposited -= minQuantity
+	int 0
+	dup
+	int 8
 	txn Sender
 	frame_dig -1 // asset: AssetID
 	itob
@@ -1359,24 +1069,49 @@ acceptBid:
 	frame_dig -2 // nonce: uint64
 	itob
 	concat
-	frame_dig 0 // currentDeposited: uint64
-	frame_dig 5 // minQuantity: uint64
+	cover 2
+	box_extract
+	btoi
+	frame_dig 4 // minQuantity: uint64
 	-
 	itob
-	frame_dig 1 // currentUnitaryPrice: uint64
+	txn Sender
+	frame_dig -1 // asset: AssetID
 	itob
 	concat
-	frame_dig 2 // currentBidder: address
+	frame_dig -2 // nonce: uint64
+	itob
 	concat
-	frame_dig 3 // currentBidQuantity: uint64
-	frame_dig 5 // minQuantity: uint64
+	cover 2
+	box_replace
+
+	// contracts\DigitalMarketplace.algo.ts:147
+	// this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value.bidQuantity -= minQuantity
+	int 48 // headOffset
+	dup
+	int 8
+	txn Sender
+	frame_dig -1 // asset: AssetID
+	itob
+	concat
+	frame_dig -2 // nonce: uint64
+	itob
+	concat
+	cover 2
+	box_extract
+	btoi
+	frame_dig 4 // minQuantity: uint64
 	-
 	itob
-	concat
-	frame_dig 4 // currentBidUnitaryPrice: uint64
+	txn Sender
+	frame_dig -1 // asset: AssetID
 	itob
 	concat
-	box_put
+	frame_dig -2 // nonce: uint64
+	itob
+	concat
+	cover 2
+	box_replace
 	retsub
 
 // withdraw(uint64,uint64)void
@@ -1402,7 +1137,7 @@ withdraw:
 	byte 0x
 	dupn 4
 
-	// contracts\DigitalMarketplace.algo.ts:204
+	// contracts\DigitalMarketplace.algo.ts:151
 	// currentDeposited = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value.deposited
 	int 0
 	int 8
@@ -1418,7 +1153,7 @@ withdraw:
 	btoi
 	frame_bury 0 // currentDeposited: uint64
 
-	// contracts\DigitalMarketplace.algo.ts:205
+	// contracts\DigitalMarketplace.algo.ts:152
 	// currentBidder = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value.bidder
 	int 16 // headOffset
 	int 32
@@ -1433,7 +1168,7 @@ withdraw:
 	box_extract
 	frame_bury 1 // currentBidder: address
 
-	// contracts\DigitalMarketplace.algo.ts:206
+	// contracts\DigitalMarketplace.algo.ts:153
 	// currentBidQuantity = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value.bidQuantity
 	int 48 // headOffset
 	int 8
@@ -1449,7 +1184,7 @@ withdraw:
 	btoi
 	frame_bury 2 // currentBidQuantity: uint64
 
-	// contracts\DigitalMarketplace.algo.ts:207
+	// contracts\DigitalMarketplace.algo.ts:154
 	// currentBidUnitaryPrice = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value
 	//       .bidUnitaryPrice
 	int 56 // headOffset
@@ -1467,7 +1202,7 @@ withdraw:
 	frame_bury 3 // currentBidUnitaryPrice: uint64
 
 	// *if1_condition
-	// contracts\DigitalMarketplace.algo.ts:210
+	// contracts\DigitalMarketplace.algo.ts:157
 	// currentBidder !== globals.zeroAddress
 	frame_dig 1 // currentBidder: address
 	global ZeroAddress
@@ -1475,7 +1210,7 @@ withdraw:
 	bz *if1_end
 
 	// *if1_consequent
-	// contracts\DigitalMarketplace.algo.ts:211
+	// contracts\DigitalMarketplace.algo.ts:158
 	// currentBidDeposit = wideRatio([currentBidUnitaryPrice, currentBidQuantity], [10 ** asset.decimals])
 	frame_dig 3 // currentBidUnitaryPrice: uint64
 	frame_dig 2 // currentBidQuantity: uint64
@@ -1496,7 +1231,7 @@ withdraw:
 	assert
 	frame_bury 4 // currentBidDeposit: uint64
 
-	// contracts\DigitalMarketplace.algo.ts:212
+	// contracts\DigitalMarketplace.algo.ts:159
 	// sendPayment({
 	//         receiver: currentBidder,
 	//         amount: currentBidDeposit,
@@ -1505,12 +1240,12 @@ withdraw:
 	int pay
 	itxn_field TypeEnum
 
-	// contracts\DigitalMarketplace.algo.ts:213
+	// contracts\DigitalMarketplace.algo.ts:160
 	// receiver: currentBidder
 	frame_dig 1 // currentBidder: address
 	itxn_field Receiver
 
-	// contracts\DigitalMarketplace.algo.ts:214
+	// contracts\DigitalMarketplace.algo.ts:161
 	// amount: currentBidDeposit
 	frame_dig 4 // currentBidDeposit: uint64
 	itxn_field Amount
@@ -1523,7 +1258,7 @@ withdraw:
 	itxn_submit
 
 *if1_end:
-	// contracts\DigitalMarketplace.algo.ts:218
+	// contracts\DigitalMarketplace.algo.ts:165
 	// this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).delete()
 	txn Sender
 	frame_dig -1 // asset: AssetID
@@ -1534,7 +1269,7 @@ withdraw:
 	concat
 	box_del
 
-	// contracts\DigitalMarketplace.algo.ts:220
+	// contracts\DigitalMarketplace.algo.ts:167
 	// sendPayment({
 	//       receiver: this.txn.sender,
 	//       amount: forSaleMbr,
@@ -1543,12 +1278,12 @@ withdraw:
 	int pay
 	itxn_field TypeEnum
 
-	// contracts\DigitalMarketplace.algo.ts:221
+	// contracts\DigitalMarketplace.algo.ts:168
 	// receiver: this.txn.sender
 	txn Sender
 	itxn_field Receiver
 
-	// contracts\DigitalMarketplace.algo.ts:222
+	// contracts\DigitalMarketplace.algo.ts:169
 	// amount: forSaleMbr
 	int 47300
 	itxn_field Amount
@@ -1560,7 +1295,7 @@ withdraw:
 	// Submit inner transaction
 	itxn_submit
 
-	// contracts\DigitalMarketplace.algo.ts:225
+	// contracts\DigitalMarketplace.algo.ts:172
 	// sendAssetTransfer({
 	//       xferAsset: asset,
 	//       assetReceiver: this.txn.sender,
@@ -1570,17 +1305,17 @@ withdraw:
 	int axfer
 	itxn_field TypeEnum
 
-	// contracts\DigitalMarketplace.algo.ts:226
+	// contracts\DigitalMarketplace.algo.ts:173
 	// xferAsset: asset
 	frame_dig -1 // asset: AssetID
 	itxn_field XferAsset
 
-	// contracts\DigitalMarketplace.algo.ts:227
+	// contracts\DigitalMarketplace.algo.ts:174
 	// assetReceiver: this.txn.sender
 	txn Sender
 	itxn_field AssetReceiver
 
-	// contracts\DigitalMarketplace.algo.ts:228
+	// contracts\DigitalMarketplace.algo.ts:175
 	// assetAmount: currentDeposited
 	frame_dig 0 // currentDeposited: uint64
 	itxn_field AssetAmount

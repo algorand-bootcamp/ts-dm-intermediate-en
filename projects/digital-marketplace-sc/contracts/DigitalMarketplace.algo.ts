@@ -66,47 +66,15 @@ export class DigitalMarketplace extends Contract {
       assetAmount: { greaterThan: 0 },
     });
 
-    const currentDeposited = this.listings({ owner: this.txn.sender, asset: xfer.xferAsset, nonce: nonce }).value
-      .deposited;
-    const currentUnitaryPrice = this.listings({ owner: this.txn.sender, asset: xfer.xferAsset, nonce: nonce }).value
-      .unitaryPrice;
-    const currentBidder = this.listings({ owner: this.txn.sender, asset: xfer.xferAsset, nonce: nonce }).value.bidder;
-    const currentBidQuantity = this.listings({ owner: this.txn.sender, asset: xfer.xferAsset, nonce: nonce }).value
-      .bidQuantity;
-    const currentBidUnitaryPrice = this.listings({ owner: this.txn.sender, asset: xfer.xferAsset, nonce: nonce }).value
-      .bidUnitaryPrice;
-
-    this.listings({ owner: this.txn.sender, asset: xfer.xferAsset, nonce: nonce }).value = {
-      deposited: currentDeposited + xfer.assetAmount,
-      unitaryPrice: currentUnitaryPrice,
-      bidder: currentBidder,
-      bidQuantity: currentBidQuantity,
-      bidUnitaryPrice: currentBidUnitaryPrice,
-    };
+    this.listings({ owner: this.txn.sender, asset: xfer.xferAsset, nonce: nonce }).value.deposited += xfer.assetAmount;
   }
 
   public setPrice(asset: AssetID, nonce: uint64, unitaryPrice: uint64) {
-    const currentDeposited = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value.deposited;
-    const currentBidder = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value.bidder;
-    const currentBidQuantity = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value.bidQuantity;
-    const currentBidUnitaryPrice = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value
-      .bidUnitaryPrice;
-
-    this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value = {
-      deposited: currentDeposited,
-      unitaryPrice: unitaryPrice,
-      bidder: currentBidder,
-      bidQuantity: currentBidQuantity,
-      bidUnitaryPrice: currentBidUnitaryPrice,
-    };
+    this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value.unitaryPrice = unitaryPrice;
   }
 
   public buy(owner: Address, asset: AssetID, nonce: uint64, buyPay: PayTxn, quantity: uint64) {
-    const currentDeposited = this.listings({ owner: owner, asset: asset, nonce: nonce }).value.deposited;
     const currentUnitaryPrice = this.listings({ owner: owner, asset: asset, nonce: nonce }).value.unitaryPrice;
-    const currentBidder = this.listings({ owner: owner, asset: asset, nonce: nonce }).value.bidder;
-    const currentBidQuantity = this.listings({ owner: owner, asset: asset, nonce: nonce }).value.bidQuantity;
-    const currentBidUnitaryPrice = this.listings({ owner: owner, asset: asset, nonce: nonce }).value.bidUnitaryPrice;
 
     const amountToBePaid = wideRatio([currentUnitaryPrice, quantity], [10 ** asset.decimals]);
 
@@ -122,21 +90,11 @@ export class DigitalMarketplace extends Contract {
       assetAmount: quantity,
     });
 
-    this.listings({ owner: owner, asset: asset, nonce: nonce }).value = {
-      deposited: currentDeposited - quantity,
-      unitaryPrice: currentUnitaryPrice,
-      bidder: currentBidder,
-      bidQuantity: currentBidQuantity,
-      bidUnitaryPrice: currentBidUnitaryPrice,
-    };
+    this.listings({ owner: owner, asset: asset, nonce: nonce }).value.deposited -= quantity;
   }
 
   public bid(owner: Address, asset: AssetID, nonce: uint64, bidPay: PayTxn, quantity: uint64, unitaryPrice: uint64) {
     assert(this.txn.sender.isOptedInToAsset(asset));
-
-    const currentDeposited = this.listings({ owner: owner, asset: asset, nonce: nonce }).value.deposited;
-    const currentUnitaryPrice = this.listings({ owner: owner, asset: asset, nonce: nonce }).value.unitaryPrice;
-    assert(quantity <= currentDeposited);
 
     const currentBidder = this.listings({ owner: owner, asset: asset, nonce: nonce }).value.bidder;
     if (currentBidder !== globals.zeroAddress) {
@@ -158,19 +116,13 @@ export class DigitalMarketplace extends Contract {
       amount: bidDeposit,
     });
 
-    this.listings({ owner: owner, asset: asset, nonce: nonce }).value = {
-      deposited: currentDeposited,
-      unitaryPrice: currentUnitaryPrice,
-      bidder: this.txn.sender,
-      bidQuantity: quantity,
-      bidUnitaryPrice: unitaryPrice,
-    };
+    this.listings({ owner: owner, asset: asset, nonce: nonce }).value.bidder = this.txn.sender;
+    this.listings({ owner: owner, asset: asset, nonce: nonce }).value.bidQuantity = quantity;
+    this.listings({ owner: owner, asset: asset, nonce: nonce }).value.bidUnitaryPrice = unitaryPrice;
   }
 
   public acceptBid(asset: AssetID, nonce: uint64) {
     const currentDeposited = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value.deposited;
-    const currentUnitaryPrice = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value
-      .unitaryPrice;
     const currentBidder = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value.bidder;
     const currentBidQuantity = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value.bidQuantity;
     const currentBidUnitaryPrice = this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value
@@ -191,13 +143,8 @@ export class DigitalMarketplace extends Contract {
       amount: currentBidDeposit,
     });
 
-    this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value = {
-      deposited: currentDeposited - minQuantity,
-      unitaryPrice: currentUnitaryPrice,
-      bidder: currentBidder,
-      bidQuantity: currentBidQuantity - minQuantity,
-      bidUnitaryPrice: currentBidUnitaryPrice,
-    };
+    this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value.deposited -= minQuantity;
+    this.listings({ owner: this.txn.sender, asset: asset, nonce: nonce }).value.bidQuantity -= minQuantity;
   }
 
   public withdraw(asset: AssetID, nonce: uint64) {
